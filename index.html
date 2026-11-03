@@ -1,0 +1,291 @@
+<!doctype html>
+<html lang="zh-Hant">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>工作代辦摘要</title>
+<link rel="icon" href="images/logo.svg" type="image/svg+xml">
+<style>
+/* 版面:頂部列(使用者與同步狀態)→ 四格統計 → 左欄代辦清單、右欄分布與文字摘要;手機改單欄 */
+:root{
+  --bg:#f4f6fa;
+  --surface:#ffffff;
+  --surface-2:#eef2f9;
+  --ink:#172033;
+  --ink-2:#4b5672;
+  --muted:#7b859c;
+  --line:#dde3ee;
+  --accent:#2d5bd3;
+  --accent-soft:#e3eafc;
+  --on-accent:#ffffff;
+  --high:#d23c3c;
+  --medium:#c98a12;
+  --low:#3c8a5c;
+  --overdue:#c62f3a;
+  --overdue-soft:#fce9ea;
+  --ok:#2f8a57;
+  --font:"Noto Sans TC","Microsoft JhengHei","PingFang TC",system-ui,sans-serif;
+  --num:"Bahnschrift","DIN Alternate","Segoe UI",system-ui,sans-serif;
+}
+@media (prefers-color-scheme: dark){
+  :root:not([data-theme="light"]){
+    --bg:#0f141e; --surface:#171e2b; --surface-2:#1e2738; --ink:#e7ecf6; --ink-2:#b3bdd2; --muted:#8590a8; --line:#2a3447;
+    --accent:#7d9dff; --accent-soft:#22305a; --on-accent:#0f141e;
+    --high:#ff7272; --medium:#f2b94a; --low:#6fcf97; --overdue:#ff6b74; --overdue-soft:#3b1d24; --ok:#6fcf97;
+    color-scheme:dark;
+  }
+}
+:root[data-theme="dark"]{
+  --bg:#0f141e; --surface:#171e2b; --surface-2:#1e2738; --ink:#e7ecf6; --ink-2:#b3bdd2; --muted:#8590a8; --line:#2a3447;
+  --accent:#7d9dff; --accent-soft:#22305a; --on-accent:#0f141e;
+  --high:#ff7272; --medium:#f2b94a; --low:#6fcf97; --overdue:#ff6b74; --overdue-soft:#3b1d24; --ok:#6fcf97;
+  color-scheme:dark;
+}
+*{box-sizing:border-box}
+body{margin:0;background:var(--bg);color:var(--ink);font:15px/1.65 var(--font)}
+.wrap{max-width:1180px;margin:0 auto;
+  padding-left:max(16px, env(safe-area-inset-left, 0px));
+  padding-right:max(16px, env(safe-area-inset-right, 0px))}
+button,input,select,textarea{font:inherit;color:inherit}
+:focus-visible{outline:2px solid var(--accent);outline-offset:2px}
+.btn{border:1px solid var(--line);background:var(--surface);padding:7px 14px;border-radius:8px;cursor:pointer;font-weight:600;font-size:14px}
+.btn:hover{border-color:var(--accent);color:var(--accent)}
+.btn.primary{background:var(--accent);border-color:var(--accent);color:var(--on-accent)}
+.btn.primary:hover{filter:brightness(1.08);color:var(--on-accent)}
+.btn.ghost{background:transparent;border-color:transparent;color:var(--ink-2)}
+.btn.danger{color:var(--overdue)}
+.btn:disabled{opacity:.6;cursor:default}
+.field{display:grid;gap:4px}
+.field label{font-size:13px;font-weight:600;color:var(--ink-2)}
+.field input,.field select,.field textarea{width:100%;background:var(--surface);border:1px solid var(--line);border-radius:8px;padding:8px 10px}
+.field input:focus,.field select:focus,.field textarea:focus{outline:none;border-color:var(--accent);box-shadow:0 0 0 3px var(--accent-soft)}
+.note{font-size:13px;color:var(--muted)}
+.msg{font-size:14px;padding:10px 12px;border-radius:8px;background:var(--accent-soft);color:var(--ink)}
+.msg.error{background:var(--overdue-soft);color:var(--overdue)}
+
+/* 登入 */
+.login{min-height:100vh;display:grid;place-items:center;padding-block:32px}
+.login .card{width:100%;max-width:420px;background:var(--surface);border:1px solid var(--line);border-radius:14px;padding:28px 24px;display:grid;gap:16px}
+.login img{width:48px;height:48px}
+.login h1{margin:0;font-size:24px;letter-spacing:.04em}
+.login p{margin:0;color:var(--ink-2)}
+
+/* 頂部 */
+.topbar{background:var(--surface);border-bottom:1px solid var(--line)}
+.topbar .wrap{display:flex;flex-wrap:wrap;align-items:center;justify-content:space-between;gap:10px 16px;padding-block:12px}
+.brand{display:flex;align-items:center;gap:10px}
+.brand img{width:36px;height:36px}
+.brand h1{margin:0;font-size:19px;letter-spacing:.04em;line-height:1.2}
+.brand .sub{font-size:12.5px;color:var(--muted)}
+.who{display:flex;align-items:center;gap:10px;font-size:13px;color:var(--ink-2);flex-wrap:wrap}
+
+main{display:grid;gap:18px;padding-block:20px 40px}
+
+/* 統計 */
+.stats{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:12px}
+@media (max-width:760px){.stats{grid-template-columns:repeat(2,minmax(0,1fr))}}
+.stat{background:var(--surface);border:1px solid var(--line);border-radius:12px;padding:14px 16px;display:grid;gap:2px;text-align:left;cursor:pointer}
+.stat:hover{border-color:var(--accent)}
+.stat .k{font-size:13px;color:var(--muted);font-weight:600}
+.stat .v{font:700 30px/1.15 var(--num);font-variant-numeric:tabular-nums}
+.stat .s{font-size:12.5px;color:var(--ink-2)}
+.stat.alert .v{color:var(--overdue)}
+.stat.alert{border-color:var(--overdue);background:linear-gradient(var(--overdue-soft),var(--surface) 70%)}
+.rate{height:6px;border-radius:3px;background:var(--surface-2);overflow:hidden;margin-top:6px}
+.rate i{display:block;height:100%;background:var(--ok);width:0;transition:width .4s}
+
+.layout{display:grid;grid-template-columns:minmax(0,1fr) 340px;gap:18px;align-items:start}
+@media (max-width:900px){.layout{grid-template-columns:minmax(0,1fr)}}
+.panel{background:var(--surface);border:1px solid var(--line);border-radius:12px}
+.panel-head{display:flex;flex-wrap:wrap;align-items:center;justify-content:space-between;gap:10px;padding:14px 16px;border-bottom:1px solid var(--line)}
+.panel-head h2{margin:0;font-size:16px}
+
+/* 清單工具列 */
+.tools{display:grid;gap:10px;padding:12px 16px;border-bottom:1px solid var(--line)}
+.tabs{display:flex;gap:6px;overflow-x:auto;scrollbar-width:none}
+.tabs::-webkit-scrollbar{display:none}
+.tab{flex:none;border:1px solid var(--line);background:var(--surface);border-radius:999px;padding:4px 12px;font-size:13.5px;font-weight:600;color:var(--ink-2);cursor:pointer}
+.tab .n{font-family:var(--num);color:var(--muted);margin-left:4px}
+.tab[aria-pressed="true"]{background:var(--accent);border-color:var(--accent);color:var(--on-accent)}
+.tab[aria-pressed="true"] .n{color:var(--on-accent);opacity:.85}
+.filters{display:flex;gap:8px;flex-wrap:wrap}
+.filters input{flex:1 1 200px;min-width:0;background:var(--surface);border:1px solid var(--line);border-radius:8px;padding:6px 10px}
+.filters select{background:var(--surface);border:1px solid var(--line);border-radius:8px;padding:6px 8px;max-width:100%}
+
+/* 代辦項目 */
+.list{list-style:none;margin:0;padding:0}
+.todo{display:grid;grid-template-columns:auto minmax(0,1fr) auto;gap:12px;padding:14px 16px;border-bottom:1px solid var(--line);border-left:3px solid transparent}
+.todo:last-child{border-bottom:0}
+.todo.p-high{border-left-color:var(--high)}
+.todo.p-medium{border-left-color:var(--medium)}
+.todo.p-low{border-left-color:var(--low)}
+.todo.done .title{text-decoration:line-through;color:var(--muted)}
+.check{width:22px;height:22px;margin-top:2px;accent-color:var(--ok);cursor:pointer}
+.title{font-weight:700;line-height:1.5;overflow-wrap:anywhere}
+.chips{display:flex;flex-wrap:wrap;gap:6px;margin-top:4px;font-size:12.5px}
+.chip{padding:1px 8px;border-radius:999px;background:var(--surface-2);color:var(--ink-2);white-space:nowrap}
+.chip.pri-high{color:var(--high);font-weight:700}
+.chip.pri-medium{color:var(--medium);font-weight:700}
+.chip.pri-low{color:var(--low);font-weight:700}
+.chip.overdue{background:var(--overdue);color:var(--on-accent);font-weight:700}
+.chip.today{background:var(--overdue-soft);color:var(--overdue);font-weight:700}
+.chip.soon{color:var(--medium);font-weight:700}
+.chip.mail{background:var(--accent-soft);color:var(--accent);font-weight:600}
+.detail{margin:6px 0 0;font-size:13.5px;color:var(--ink-2);white-space:pre-wrap;overflow-wrap:anywhere}
+.from{font-size:12.5px;color:var(--muted);margin-top:4px;overflow-wrap:anywhere}
+.actions{display:flex;flex-direction:column;gap:6px;align-items:flex-end}
+.actions select{font-size:13px;background:var(--surface);border:1px solid var(--line);border-radius:6px;padding:3px 6px}
+.actions .row{display:flex;gap:2px}
+.actions .btn{padding:3px 8px;font-size:13px}
+@media (max-width:560px){
+  .todo{grid-template-columns:auto minmax(0,1fr)}
+  .actions{grid-column:2;flex-direction:row;align-items:center;justify-content:flex-start;flex-wrap:wrap}
+}
+.empty{padding:32px 20px;text-align:center;color:var(--ink-2)}
+.empty strong{display:block;color:var(--ink);font-size:16px;margin-bottom:4px}
+
+/* 側欄 */
+.side{display:grid;gap:18px}
+.side .body{padding:14px 16px;display:grid;gap:14px}
+.dist h3{margin:0 0 8px;font-size:13.5px;color:var(--ink-2)}
+.bars{list-style:none;margin:0;padding:0;display:grid;gap:7px;font-size:13px}
+.bars li{display:grid;grid-template-columns:5.5em minmax(0,1fr) 2em;gap:8px;align-items:center}
+.bars .name{overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.bars .bar{height:8px;border-radius:4px;background:var(--surface-2);overflow:hidden}
+.bars .bar i{display:block;height:100%;background:var(--c, var(--accent))}
+.bars .n{text-align:right;font-family:var(--num);color:var(--muted)}
+.seg{display:inline-flex;border:1px solid var(--line);border-radius:8px;overflow:hidden}
+.seg button{border:0;background:var(--surface);padding:4px 12px;font-size:13.5px;font-weight:600;color:var(--ink-2);cursor:pointer}
+.seg button[aria-pressed="true"]{background:var(--accent);color:var(--on-accent)}
+.summary{margin:0;background:var(--surface-2);border-radius:8px;padding:12px 14px;font:13.5px/1.75 var(--font);white-space:pre-wrap;overflow-wrap:anywhere;max-height:420px;overflow:auto}
+
+/* 對話框 */
+dialog{border:1px solid var(--line);border-radius:14px;padding:0;width:min(520px, calc(100vw - 32px));background:var(--surface);color:var(--ink)}
+dialog::backdrop{background:rgba(10,15,30,.45)}
+dialog form{display:grid;gap:12px;padding:20px}
+dialog h2{margin:0 0 4px;font-size:18px}
+.grid2{display:grid;grid-template-columns:1fr 1fr;gap:12px}
+@media (max-width:480px){.grid2{grid-template-columns:1fr}}
+.dlg-actions{display:flex;justify-content:flex-end;gap:8px;margin-top:4px}
+
+.toast{position:fixed;left:50%;bottom:calc(20px + env(safe-area-inset-bottom, 0px));transform:translateX(-50%);background:var(--ink);color:var(--bg);
+  padding:8px 16px;border-radius:999px;font-size:14px;box-shadow:0 6px 20px rgba(0,0,0,.2);z-index:20}
+.loading{opacity:.55;pointer-events:none}
+</style>
+</head>
+<body>
+
+<!-- 登入畫面 -->
+<section class="login wrap" id="login" hidden>
+  <form class="card" id="loginForm">
+    <img src="images/logo.svg" alt="">
+    <h1>工作代辦摘要</h1>
+    <p>輸入你的 Email,我們會寄一封登入連結給你,點連結就能登入,不需要密碼。</p>
+    <div class="field">
+      <label for="email">Email</label>
+      <input id="email" type="email" required autocomplete="email" placeholder="you@example.com">
+    </div>
+    <button class="btn primary" id="loginBtn" type="submit">寄送登入連結</button>
+    <div class="msg" id="loginMsg" hidden></div>
+    <p class="note" id="fileWarn" hidden>你是直接用檔案開啟這個網頁(網址列以 file:/// 開頭),登入連結無法導回這裡。請改用 GitHub Pages 網址或本機伺服器開啟。</p>
+  </form>
+</section>
+
+<!-- 主畫面 -->
+<div id="app" hidden>
+  <header class="topbar">
+    <div class="wrap">
+      <div class="brand">
+        <img src="images/logo.svg" alt="">
+        <div>
+          <h1>工作代辦摘要</h1>
+          <div class="sub" id="syncInfo">尚未從信件整理過代辦</div>
+        </div>
+      </div>
+      <div class="who">
+        <span id="who"></span>
+        <button class="btn" id="reload" type="button">重新整理</button>
+        <button class="btn ghost" id="logout" type="button">登出</button>
+      </div>
+    </div>
+  </header>
+
+  <main class="wrap">
+    <section class="stats" aria-label="統計">
+      <button class="stat" type="button" data-go="today"><span class="k">今天到期</span><span class="v" id="stToday">0</span><span class="s">未完成的代辦</span></button>
+      <button class="stat" type="button" data-go="overdue" id="stOverdueCard"><span class="k">已逾期</span><span class="v" id="stOverdue">0</span><span class="s">需要優先處理</span></button>
+      <button class="stat" type="button" data-go="open"><span class="k">待辦總數</span><span class="v" id="stOpen">0</span><span class="s" id="stDoing">進行中 0 項</span></button>
+      <button class="stat" type="button" data-go="done"><span class="k">本週完成率</span><span class="v" id="stRate">—</span><span class="s" id="stWeekDone">本週完成 0 項</span><span class="rate"><i id="stRateBar"></i></span></button>
+    </section>
+
+    <div class="layout">
+      <section class="panel" aria-label="代辦清單">
+        <div class="panel-head">
+          <h2>代辦清單</h2>
+          <button class="btn primary" id="addBtn" type="button">+ 新增代辦</button>
+        </div>
+        <div class="tools">
+          <div class="tabs" id="tabs" role="group" aria-label="篩選"></div>
+          <div class="filters">
+            <input id="q" type="search" placeholder="搜尋標題、說明、寄件人" aria-label="搜尋代辦">
+            <select id="projectFilter" aria-label="依專案篩選"></select>
+          </div>
+        </div>
+        <ul class="list" id="list"></ul>
+      </section>
+
+      <div class="side">
+        <section class="panel" aria-label="分布">
+          <div class="panel-head"><h2>未完成代辦分布</h2></div>
+          <div class="body">
+            <div class="dist"><h3>依優先度</h3><ul class="bars" id="byPriority"></ul></div>
+            <div class="dist"><h3>依專案</h3><ul class="bars" id="byProject"></ul></div>
+          </div>
+        </section>
+        <section class="panel" aria-label="文字摘要">
+          <div class="panel-head">
+            <h2>文字摘要</h2>
+            <div class="seg" role="group" aria-label="摘要類型">
+              <button type="button" data-mode="day" aria-pressed="true">日報</button>
+              <button type="button" data-mode="week" aria-pressed="false">週報</button>
+            </div>
+          </div>
+          <div class="body">
+            <pre class="summary" id="summary"></pre>
+            <button class="btn primary" id="copyBtn" type="button">複製摘要</button>
+          </div>
+        </section>
+      </div>
+    </div>
+  </main>
+</div>
+
+<!-- 新增/編輯 -->
+<dialog id="dlg">
+  <form id="todoForm" method="dialog">
+    <h2 id="dlgTitle">新增代辦</h2>
+    <div class="field"><label for="fTitle">標題</label><input id="fTitle" required maxlength="300"></div>
+    <div class="field"><label for="fDetail">說明</label><textarea id="fDetail" rows="3"></textarea></div>
+    <div class="grid2">
+      <div class="field"><label for="fDue">到期日</label><input id="fDue" type="date"></div>
+      <div class="field"><label for="fProject">專案</label><input id="fProject" list="projectList" placeholder="例如:客戶 A 導入"><datalist id="projectList"></datalist></div>
+      <div class="field"><label for="fPriority">優先度</label>
+        <select id="fPriority"><option value="high">高</option><option value="medium" selected>中</option><option value="low">低</option></select></div>
+      <div class="field"><label for="fStatus">狀態</label>
+        <select id="fStatus"><option value="todo">待辦</option><option value="doing">進行中</option><option value="done">已完成</option></select></div>
+    </div>
+    <div class="msg error" id="formMsg" hidden></div>
+    <div class="dlg-actions">
+      <button class="btn ghost" type="button" id="cancelBtn">取消</button>
+      <button class="btn primary" type="submit" id="saveBtn">儲存</button>
+    </div>
+  </form>
+</dialog>
+
+<div class="toast" id="toast" hidden></div>
+
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.45.4/dist/umd/supabase.min.js"></script>
+<script src="config.js"></script>
+<script src="app.js"></script>
+</body>
+</html>
